@@ -21,3 +21,4 @@ id_rsa*
 credenciales*
 .env
 passwords*
+*.zip
