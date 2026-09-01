@@ -1,6 +1,6 @@
 # Qué pasa exactamente cuando escribo una URL
 
-**Entregable de la semana 1** · Análisis con capturas propias de Wireshark
+**Entregable del Bloque 1 · Paso 17** · Análisis con capturas propias de Wireshark
 
 > Es la pregunta de entrevista técnica más frecuente que existe. La diferencia entre recitarla y
 > responderla con capturas propias es la diferencia entre un candidato y otro.
