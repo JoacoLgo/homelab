@@ -1,24 +1,107 @@
-# Sistemas operativos
+# ==========================================================================
+# .gitignore del laboratorio
+# Regla de oro: si dudás de si un archivo puede ir a un repo público,
+# no lo commitees. Un commit borrado sigue estando en el historial.
+# ==========================================================================
+
+# --- Secretos: nunca, bajo ninguna circunstancia ---------------------------
+*.key
+*.pem
+*.pfx
+*.p12
+*.crt
+*.cer
+*.kdbx
+id_rsa*
+id_ed25519*
+*_rsa
+*_ed25519
+known_hosts
+.env
+.env.*
+*.tfvars
+!*.tfvars.example
+*.ovpn
+*.rdp
+credenciales*
+credentials*
+secrets*
+secretos*
+passwords*
+contrasenas*
+*.token
+.azure/
+.aws/
+
+# --- Respuestas de herramientas que suelen traer datos adentro -------------
+*_answerfile.xml
+unattend.xml
+Autounattend.xml
+inventory.ini
+!inventory.ini.example
+
+# --- Imágenes y discos de máquinas virtuales (pesan GB, no van a Git) ------
+*.iso
+*.img
+*.vhd
+*.vhdx
+*.avhdx
+*.vmdk
+*.qcow2
+*.ova
+*.ovf
+*.wim
+*.esd
+
+# --- Capturas de tráfico y volcados ---------------------------------------
+# Subí solo las que ilustran algo, y siempre revisadas antes:
+#   git add -f 01-redes/capturas/ejemplo.pcapng
+*.pcap
+*.pcapng
+*.cap
+*.etl
+*.evtx
+*.dmp
+*.core
+
+# --- Exportaciones y datos crudos que pueden traer datos personales -------
+*.bak
+*.7z
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+
+# --- Documentos privados del plan de estudio ------------------------------
+# Viven en la Mac, no en el repo público: tienen datos de licencia,
+# de la red del trabajo y valoraciones personales.
+hoja-de-ruta-operativa.md
+estado-del-plan.md
+arquitectura-lab.md
+ruta-habilidades-IT-2026.md
+privado/
+
+# --- Sistema operativo ----------------------------------------------------
 .DS_Store
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
 desktop.ini
 
-# Editores
+# --- Editores y entornos --------------------------------------------------
 .vscode/
 .idea/
 *.swp
 *~
+__pycache__/
+*.py[cod]
+.venv/
+venv/
 
-# Capturas de tráfico pesadas (subir solo las que ilustran algo, con --force si hace falta)
-*.pcap
-*.pcapng
-!ejemplos/*.pcap
-
-# Nunca, bajo ninguna circunstancia
-*.key
-*.pem
-id_rsa*
-credenciales*
-.env
-passwords*
-*.zip
+# --- Terraform / IaC ------------------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
