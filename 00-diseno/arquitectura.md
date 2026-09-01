@@ -1,193 +1,173 @@
 # Arquitectura del laboratorio
 
-**Versión:** 1.0 · **Fecha:** agosto de 2026
-**Estado:** diseñado, pendiente de implementación
+**Versión 3 — Hyper-V.** Vigente desde el 27/08/2026 · Datos verificados sobre la máquina el 31/08/2026.
+Reemplaza a la v1 (Proxmox sobre servidor propio) y a la v2 (nube), ambas descartadas. El porqué del
+descarte está al final: las decisiones revertidas también son parte del diseño.
 
 ---
 
-## 1. Objetivo del diseño
+## 1. Qué se busca construir
 
-Replicar la infraestructura de una empresa pequeña (~50 empleados) con el nivel de segmentación
-que se considera buena práctica, para poder:
+Replicar la infraestructura de una empresa chica con el nivel de segmentación que se considera
+buena práctica, para poder hacer tres cosas sobre el mismo entorno:
 
-1. Administrarla como lo haría un sysadmin (usuarios, políticas, permisos).
-2. Atacarla desde un segmento aislado, de forma controlada.
-3. Detectar esos ataques desde un SIEM, como lo haría un analista de SOC.
+1. **Administrarla** como un sysadmin: dominio, usuarios, políticas, permisos, backups.
+2. **Atacarla** desde un segmento aislado, de forma controlada.
+3. **Detectar** esos ataques desde un SIEM, como lo haría un analista de SOC.
 
-Tres restricciones guiaron las decisiones:
+Tres restricciones guían todas las decisiones:
 
-- **Aislamiento del segmento ofensivo.** El tráfico de ataque nunca sale del laboratorio.
-- **Segmentación realista.** Servidores, clientes y seguridad en VLANs separadas, no todo plano.
-- **Reproducibilidad.** Todo documentado para poder reconstruirlo desde cero.
-
----
-
-## 2. Diagrama de red
-
-```mermaid
-graph TB
-    INET([Internet]):::inet
-    RED[Red física de la ubicación<br/>vmbr0]:::fisica
-
-    INET --- RED
-    RED --- FW
-
-    FW[<b>FW01</b> · pfSense<br/>Router · Firewall · Inter-VLAN<br/>1 GB RAM]:::fw
-
-    FW --- V10
-    FW --- V20
-    FW --- V30
-    FW -.bloqueado.- V99
-
-    subgraph V10 [" VLAN 10 · SERVIDORES · 10.10.10.0/24 "]
-        DC[<b>DC01</b><br/>Windows Server 2022<br/>AD DS · DNS · DHCP<br/>10.10.10.10]:::win
-    end
-
-    subgraph V20 [" VLAN 20 · CLIENTES · 10.10.20.0/24 "]
-        C1[<b>CLI01</b><br/>Windows 11<br/>DHCP]:::win
-        C2[<b>CLI02</b><br/>Windows 11<br/>DHCP]:::win
-    end
-
-    subgraph V30 [" VLAN 30 · SEGURIDAD · 10.10.30.0/24 "]
-        LNX[<b>SRV-LNX01</b><br/>Ubuntu Server 24.04<br/>10.10.30.10]:::lnx
-        SIEM[<b>SIEM01</b><br/>Wazuh<br/>10.10.30.20]:::siem
-    end
-
-    subgraph V99 [" VLAN 99 · AISLADA · 10.10.99.0/24 "]
-        KALI[<b>KALI01</b><br/>Kali Linux<br/>10.10.99.10]:::kali
-    end
-
-    DC -.logs.-> SIEM
-    C1 -.logs.-> SIEM
-    C2 -.logs.-> SIEM
-    LNX -.logs.-> SIEM
-    KALI ==ataque==> V10
-    KALI ==ataque==> V20
-
-    classDef inet fill:#e8eaed,stroke:#5f6368,color:#202124
-    classDef fisica fill:#e3e8ef,stroke:#4a5568,color:#1a202c
-    classDef fw fill:#fff4e5,stroke:#b76e00,color:#5c3a00
-    classDef win fill:#e5f0fb,stroke:#1a6dbd,color:#0d3c6b
-    classDef lnx fill:#e9f5ea,stroke:#2d7a3e,color:#14401f
-    classDef siem fill:#f3e9f9,stroke:#7b3fa0,color:#3d1f50
-    classDef kali fill:#fdeaea,stroke:#c0392b,color:#5c1a13
-```
-
-**Cómo leerlo:** las líneas sólidas son conectividad permitida. La línea punteada entre el
-firewall y la VLAN 99 marca que ese segmento **no tiene salida a internet**. Las flechas
-punteadas hacia SIEM01 son el envío de logs de todos los endpoints. Las flechas gruesas desde
-KALI01 son las rutas de ataque habilitadas a propósito.
+- **Aislamiento del segmento ofensivo.** El tráfico de ataque no sale del laboratorio.
+- **Segmentación real.** Servidores, clientes y seguridad separados, no una red plana.
+- **Reproducibilidad.** Todo documentado como para reconstruirlo de cero desde este repositorio.
 
 ---
 
-## 3. Inventario de máquinas virtuales
+## 2. El host
 
-| VM | Sistema operativo | vCPU | RAM | Disco | VLAN | IP | Rol |
-|---|---|---|---|---|---|---|---|
-| `FW01` | pfSense CE | 2 | 1 GB | 16 GB | WAN + trunk | .1 en cada VLAN | Router, firewall, DHCP relay |
-| `DC01` | Windows Server 2022 | 2 | 4 GB | 60 GB | 10 | 10.10.10.10 | AD DS, DNS, DHCP |
-| `CLI01` | Windows 11 Pro | 2 | 4 GB | 60 GB | 20 | DHCP | Cliente de dominio |
-| `CLI02` | Windows 11 Pro | 2 | 4 GB | 60 GB | 20 | DHCP | Cliente de dominio |
-| `SRV-LNX01` | Ubuntu Server 24.04 | 2 | 2 GB | 40 GB | 30 | 10.10.30.10 | Servicios Linux, práctica |
-| `SIEM01` | Ubuntu Server + Wazuh | 4 | 4 GB | 80 GB | 30 | 10.10.30.20 | SIEM (desde semana 12) |
-| `KALI01` | Kali Linux | 2 | 4 GB | 40 GB | 99 | 10.10.99.10 | Simulación de ataques |
+| Componente | Detalle |
+|---|---|
+| Nombre | `ESSAWI28` |
+| CPU | AMD Ryzen 7 8700G — 8 núcleos / 16 hilos (Zen 4) |
+| RAM | 16 GB DDR5-4800 en 1 de 2 slots · 15,1 GB visibles al SO · tope de placa 128 GB |
+| Disco | NVMe de 477 GB — 205,9 GB libres al 31/08/2026 |
+| Red | LAN 2,5 Gb |
+| Sistema operativo | Windows 11 Pro 25H2 (build 10.0.26200.9278), fuera de dominio |
+| Virtualización | Habilitada en BIOS · `systeminfo` devuelve *"A hypervisor has been detected"*, o sea que el Windows del host ya corre como partición raíz sobre el hipervisor |
+| Acceso remoto | OpenSSH Server sobre Tailscale (vía principal) · RDP como respaldo y para consolas gráficas |
 
-**RAM total si todo está encendido:** 23 GB + ~2 GB del host.
-
-### Perfiles de encendido según la RAM disponible
-
-No todo tiene que estar prendido a la vez. En un entorno real tampoco.
-
-| Perfil | VMs encendidas | RAM | Para qué |
-|---|---|---|---|
-| **Mínimo** (8 GB) | FW01 + DC01 + SRV-LNX01 | 7 GB | Semanas 6–7: AD y Linux |
-| **Trabajo** (16 GB) | + CLI01 | 11 GB | Semanas 6–11: administración con cliente |
-| **Blue team** (16 GB) | FW01 + DC01 + CLI01 + SIEM01 | 13 GB | Semanas 12–15: detección |
-| **Completo** (32 GB) | Todas | 23 GB | Semanas 14–17: ataque y detección en vivo |
+Es una PC de escritorio de uso laboral, asignada a un solo usuario y **con autorización explícita
+para usarla como laboratorio**. Su licencia de Windows es OEM y está atada al hardware: por eso el
+sistema del host no se reinstala ni se virtualiza, el laboratorio se monta **al lado**.
 
 ---
 
-## 4. Plan de direccionamiento
+## 3. Por qué Hyper-V y no Proxmox
 
-| VLAN | Nombre | Red | Gateway | Rango DHCP | Reservado |
-|---|---|---|---|---|---|
-| — | WAN | DHCP de la red física | — | — | — |
-| 10 | SERVIDORES | 10.10.10.0/24 | 10.10.10.1 | — (estático) | .10–.49 servidores |
-| 20 | CLIENTES | 10.10.20.0/24 | 10.10.20.1 | .100–.200 | .10–.49 impresoras |
-| 30 | SEGURIDAD | 10.10.30.0/24 | 10.10.30.1 | — (estático) | .10–.49 herramientas |
-| 99 | AISLADA | 10.10.99.0/24 | 10.10.99.1 | .100–.150 | .10 atacante |
+| Criterio | Peso en la decisión |
+|---|---|
+| **No destruye nada** | No hay que reinstalar el host ni migrar el sistema existente. Es reversible con un comando. |
+| **No rompe el acceso remoto** | Si algo falla, la máquina arranca en el Windows de siempre. Un arranque dual o un hipervisor bare-metal podían dejar la máquina inaccesible en remoto: ese era el defecto fatal de la v1. |
+| **Ya está incluido** | Windows 11 Pro lo trae; no hace falta hardware ni licencias extra. |
+| **El escritorio sigue vivo** | El equipo se sigue usando para trabajar mientras las VMs corren al lado. |
 
-**Dominio Active Directory:** `lab.interno`
-
-> **Por qué `lab.interno` y no `lab.local`:** `.local` está reservado para mDNS/Bonjour, el
-> protocolo que usa macOS y que también implementa Avahi en Linux. Usarlo en un dominio de AD
-> genera conflictos de resolución difíciles de diagnosticar. Es un error clásico de laboratorio.
-
-**Servidor DNS de todas las VLANs internas:** `10.10.10.10` (DC01).
-En un dominio de AD, el DNS **debe** ser el controlador de dominio. Apuntar los clientes al DNS
-del router es la causa número uno de que la unión al dominio falle.
+**Contras que se aceptan a conciencia:** sin interfaz web (se administra con Hyper-V Manager y
+PowerShell), sin passthrough de USB/PCIe, sin contenedores LXC ni ZFS, y las VLANs se configuran
+por PowerShell. Proxmox queda disponible como VM anidada si en algún momento hace falta aprenderlo.
 
 ---
 
-## 5. Reglas de firewall
+## 4. Estado verificado al 31/08/2026
 
-Filosofía: **denegar por defecto**, permitir explícitamente. Cada regla existe por una razón.
+### Switches virtuales
 
-| # | Origen | Destino | Servicio | Acción | Por qué |
-|---|---|---|---|---|---|
-| 1 | VLAN 99 | WAN / Internet | cualquiera | **BLOQUEAR** | El tráfico de ataque no sale del lab. Innegociable |
-| 2 | VLAN 99 | VLAN 30 | cualquiera | **BLOQUEAR** | El atacante no debe poder tocar el SIEM |
-| 3 | VLAN 99 | VLAN 10, 20 | cualquiera | PERMITIR | Rutas de ataque habilitadas a propósito |
-| 4 | VLAN 20 | VLAN 10 | AD, DNS, SMB, Kerberos | PERMITIR | Clientes al controlador de dominio |
-| 5 | VLAN 10, 20, 30 | VLAN 30 | 1514, 1515 TCP | PERMITIR | Envío de logs al SIEM |
-| 6 | VLAN 10, 20, 30 | WAN | HTTP, HTTPS, DNS | PERMITIR | Actualizaciones |
-| 7 | VLAN 10, 20 | VLAN 99 | cualquiera | BLOQUEAR | Nadie entra al segmento aislado |
-| 8 | cualquiera | cualquiera | cualquiera | BLOQUEAR + log | Regla final. Todo lo no permitido se registra |
+Salida de `Get-VMSwitch`:
 
-> **La regla 1 es la más importante del laboratorio.** Un escaneo que se escapa a internet
-> genera un reporte de abuso contra la conexión desde donde salió. Si el lab alguna vez se
-> muda a un servidor alquilado, esta regla es la diferencia entre estudiar tranquilo y que te
-> den de baja la cuenta.
-
----
-
-## 6. Decisiones de diseño
-
-| Decisión | Alternativa descartada | Por qué |
+| Nombre | Tipo | Situación |
 |---|---|---|
-| pfSense como router | Routing nativo de Proxmox | Se aprende un firewall real, con reglas, NAT y logs. Es lo que hay en las empresas |
-| 4 VLANs | Red plana | La segmentación es lo que evalúan en entrevista. Una red plana no enseña nada |
-| Kali en VLAN sin salida | Kali en la misma red | Contención. Además fuerza a pensar el firewall como control, no como obstáculo |
-| Wazuh como SIEM principal | Splunk únicamente | Wazuh es gratis, open source y corre en ARM. Splunk se suma después, en paralelo |
-| DNS en el DC | DNS en pfSense | Es el requisito de AD. Hacerlo mal es el error más común al montar un dominio |
-| Ubuntu Server LTS | Ubuntu Desktop | Sin entorno gráfico: menos RAM y obliga a trabajar por línea de comandos |
+| `LAB-SERVIDORES` | Private | Isla: sin router, no habla con nadie |
+| `LAB-CLIENTES` | Private | Isla |
+| `LAB-SEGURIDAD` | Private | Isla |
+| `LAB-AISLADA` | Private | Isla — y va a seguir aislada a propósito |
+| `Default Switch` | Internal | NAT + DHCP administrados por Windows. Es la única salida a internet |
+
+Un switch **privado** en Hyper-V conecta VMs entre sí y **nada más**: ni con el host ni con otras
+redes. Cuatro switches privados sin router son cuatro islas.
+
+### Máquinas virtuales del laboratorio
+
+**Ninguna todavía.** El host aloja una VM ajena a este proyecto, que se apaga durante las sesiones
+de laboratorio; la única consecuencia para el diseño es el presupuesto de memoria de la sección
+siguiente.
+
+### Presupuesto de memoria
+
+| Escenario | RAM disponible para el laboratorio |
+|---|---|
+| Con la VM ajena encendida | ~3,2 GB — insuficiente |
+| Con la VM ajena apagada | ~10 GB — alcanza para el laboratorio planificado |
+
+El laboratorio completo con todo prendido a la vez suma ~11 GB (FW01 1 GB + DC01 4 GB + WS01 4 GB +
+SRV01 2 GB). Entra usando **memoria dinámica** en las VMs ociosas y sin encender todo
+simultáneamente. Ampliar a 32 GB deja de ser urgente y pasa a ser deseable.
 
 ---
 
-## 7. Orden de construcción
+## 5. Decisión abierta: el router del laboratorio
 
-Cada paso depende del anterior. Saltearse el orden genera problemas difíciles de diagnosticar.
+Es el próximo paso del diseño y la pieza que convierte cuatro islas en una red. Hace falta una VM
+con **una placa en cada switch**, que rutee, haga NAT hacia el `Default Switch` y filtre entre
+segmentos.
 
-1. **Proxmox** — instalación, red del host, `vmbr1` interno
-2. **FW01 (pfSense)** — WAN, LAN, VLANs, reglas base
-3. **DC01** — Windows Server, promoción a Domain Controller, DNS
-4. **DHCP** — en DC01 para la VLAN 20
-5. **CLI01** — Windows 11, unión al dominio ← *primer hito verificable*
-6. **SRV-LNX01** — Ubuntu, SSH, servicios
-7. **GPOs** — políticas de contraseña, restricciones, mapeo de unidades
-8. **CLI02** — segundo cliente, para probar movimiento lateral
-9. **SIEM01** — Wazuh, agentes en todos los endpoints *(semana 12)*
-10. **KALI01** — última, cuando ya hay algo que atacar y algo que detecte *(semana 14)*
+| Opción | A favor | En contra |
+|---|---|---|
+| **Debian 12 + `nftables`** *(candidata)* | Las reglas se escriben a mano, que es exactamente la habilidad que este laboratorio existe para construir. Consume ~1 GB, un tercio de la alternativa. | Curva más empinada, sin interfaz gráfica. |
+| **pfSense / OPNsense** | Interfaz web, es lo que se ve en muchas empresas. | Obligatoriamente **Generación 1** (FreeBSD no arranca con el UEFI de Gen 2) y **sin memoria dinámica**. Más RAM, y clickear una GUI enseña menos. |
 
-> **Snapshot después de cada paso.** Es la ventaja de virtualizar: romper sin miedo y volver
-> atrás en segundos. Un laboratorio sin snapshots se usa con miedo, y con miedo no se aprende.
+**Sin decidir.** Se resuelve en el Paso 3 del plan y queda registrado acá con su justificación.
 
 ---
 
-## 8. Pendiente
+## 6. Plan de direccionamiento propuesto
 
-- [ ] Instalar Proxmox y configurar `vmbr1`
-- [ ] Desplegar FW01 y validar el ruteo entre VLANs
-- [ ] Promover DC01 y verificar la resolución DNS interna
-- [ ] Unir CLI01 al dominio `lab.interno`
-- [ ] Documentar cada paso con capturas en las carpetas correspondientes
+⚠️ **Propuesta, todavía sin implementar.** Se valida y se corrige en el Paso 2 (topología) y se
+recalcula en el Paso 12 (subnetting), cuando el subnetting esté hecho a mano y no copiado.
+
+| Segmento | Switch | Rango | Para qué existe |
+|---|---|---|---|
+| WAN | `Default Switch` | DHCP de Windows | Salida a internet por el NAT del host |
+| Servidores | `LAB-SERVIDORES` | `10.10.10.0/24` | `DC01`, `SRV01` |
+| Clientes | `LAB-CLIENTES` | `10.10.20.0/24` | `WS01` y futuros clientes del dominio |
+| Seguridad | `LAB-SEGURIDAD` | `10.10.30.0/24` | Colector de logs y herramientas defensivas |
+| Aislada | `LAB-AISLADA` | `10.10.40.0/24` | Kali y muestras. **Sin ruta hacia los demás segmentos** |
+
+## 7. Inventario objetivo de VMs
+
+Ninguna existe todavía. Es el destino del Bloque 0 del plan.
+
+| VM | Rol | SO | Recursos previstos | Segmento | Paso |
+|---|---|---|---|---|---|
+| `FW01` | Router, firewall e inter-segmento | Debian 12 *(a confirmar)* | 1 GB · 1 vCPU · 5 placas | Todos | 3 |
+| `DC01` | AD DS, DNS, DHCP | Windows Server 2022 (evaluación 180 días) | 4 GB · 2 vCPU · 60 GB | Servidores | 4–6 |
+| `WS01` | Cliente unido al dominio | Windows 11 Pro | 4 GB dinámicos · 2 vCPU | Clientes | 7–8 |
+| `SRV01` | Servidor Linux, servicios y logs | Debian / Ubuntu Server | 2 GB dinámicos · 2 vCPU | Servidores | 9 |
+
+---
+
+## 8. Convenciones
+
+- **Generación 2 (UEFI)** para todo lo que la soporte. La elección es irreversible una vez creada
+  la VM: no se puede convertir una Gen 1 en Gen 2.
+- **Memoria dinámica** en las VMs ociosas, **estática** donde el servicio la necesite reservada.
+- **Checkpoints con nombre** en los hitos (`01-SO-limpio`, `02-en-dominio`), y fusionados cuando
+  dejan de hacer falta: un checkpoint vivo deja la VM corriendo sobre un disco diferencial.
+- **Rutas en el host:** `C:\Lab\{VMs,Discos,ISOs}`. Queda por definir si se mantiene la separación
+  VMs/Discos o se adopta el layout por defecto de Hyper-V, que arma
+  `C:\Lab\VMs\<VM>\Virtual Hard Disks\`.
+- **Nada de credenciales en el repositorio.** Las contraseñas del laboratorio no se versionan ni
+  aunque sean de laboratorio: la costumbre es lo que importa.
+
+---
+
+## 9. Decisiones descartadas
+
+Se documentan porque explican por qué el diseño es el que es.
+
+| Alternativa | Por qué se descartó | Fecha |
+|---|---|---|
+| **Proxmox VE sobre servidor propio** (lab v1) | Sin hardware viable. El servidor disponible era un IBM System x3650 de 2008 (Xeon E5405, 8 GB): dramáticamente inferior al Ryzen 7 8700G, y la instalación de Proxmox dio problemas. | 27/08/2026 |
+| **Arranque dual con hipervisor bare-metal** | Riesgo de dejar la máquina inaccesible en remoto, que es el modo de uso principal. | 27/08/2026 |
+| **Lab en la nube** (lab v2: Azure + VPS) | Descartado como arquitectura principal por costo y por no practicar administración de hardware. Sobreviven los datasets públicos y la biblioteca de detecciones, que no dependen de ningún hardware. | 27/08/2026 |
+| **MacBook Air ARM como host de VMs** | No existe Windows Server para ARM64 y la emulación x86 es inusable. Queda como estación de trabajo: Wireshark, Packet Tracer, terminal, Git, Python y cliente SSH/RDP. | 26/08/2026 |
+| **Wazuh como SIEM** | Requerimientos de hardware incompatibles con 16 GB de RAM compartidos. Se reemplaza por Microsoft Sentinel + KQL, que además es lo que se pide en las ofertas de SOC. | 26/08/2026 |
+
+---
+
+## 10. Orden de construcción
+
+1. **Paso 1** — Conceptos de virtualización, escritos con palabras propias. *(En curso)*
+2. **Paso 2** — Topología en papel: segmentos, rangos, gateways y diagrama.
+3. **Paso 3** — `FW01`: la decisión de arriba, construida y con reglas versionadas en `lab/fw01/`.
+4. **Pasos 4–8** — `DC01`, dominio, usuarios por CSV, `WS01` unido al dominio y GPOs con auditoría.
+5. **Paso 9** — `SRV01` y acceso por clave SSH.
+6. **Paso 10** — Checkpoints, backup y guía de reproducción de todo el laboratorio.
