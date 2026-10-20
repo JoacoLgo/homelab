@@ -1,7 +1,7 @@
 ┌───────────────────┬──────────────┬────────────┬──────────┬───────────┬─────────┐
 │ Desde ↓ / Hacia → │ WAN/Internet │ Servidores │ Clientes │ Seguridad │ Aislada │
 ├───────────────────┼──────────────┼────────────┼──────────┼───────────┼─────────┤
-│ Servidores        │ PERMITIR     │ -          | DENEGAR  │ DENEGAR   | DENEGAR │
+│ Servidores        │ DENEGAR      │ -          | DENEGAR  │ DENEGAR   | DENEGAR │
 ├───────────────────┼──────────────┼────────────┼──────────┼───────────┼─────────┤
 │ Clientes          │ PERMITIR     | PERMITIR   │ -        │ DENEGAR   │ DENEGAR │
 ├───────────────────┼──────────────┼────────────┼──────────┼───────────┼─────────┤
