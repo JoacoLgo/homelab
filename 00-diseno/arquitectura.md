@@ -8,8 +8,7 @@ descarte está al final: las decisiones revertidas también son parte del diseñ
 
 ## 1. Qué se busca construir
 
-Replicar la infraestructura de una empresa chica con el nivel de segmentación que se considera
-buena práctica, para poder hacer tres cosas sobre el mismo entorno:
+Replicar la infraestructura de una empresa chica con el nivel de segmentación que se considera buena práctica, para poder hacer tres cosas sobre el mismo entorno:
 
 1. **Administrarla** como un sysadmin: dominio, usuarios, políticas, permisos, backups.
 2. **Atacarla** desde un segmento aislado, de forma controlada.
