@@ -83,6 +83,22 @@ Un detalle de `nftables.conf`: **no usa `flush ruleset`**. Tailscale crea sus pr
 `flush` las borra cada vez que se recarga el firewall. En su lugar el archivo borra y recrea solo
 mis tablas (`inet lab` e `ip lab_nat`), así que recargarlo es seguro.
 
+### DNS: un solo camino
+
+Según el plan, `FW01` es el gateway y `DC01` es el DNS del lab. Para que el DNS respete la misma
+lógica que el resto del tráfico (una sola salida, todo revisado):
+
+```
+WS01 / SRV01 ──DNS──► DC01 ──si no es de lab.interno──► FW01 ──► internet
+```
+
+- `DC01` es el **único** que puede consultar DNS de internet (puerto 53), y `FW01` registra cada
+  consulta con el prefijo `LAB-DNS-DC01`.
+- Cualquier otro equipo que intente usar un DNS externo directamente se descarta y queda registrado
+  como `LAB-DNS-BLOQ`. Esto incluye a Clientes y Seguridad, que sí tienen salida a internet.
+
+Descarté poner un segundo resolvedor DNS en `FW01`: duplicaba un rol que el diseño le da a `DC01`.
+
 Todo se aplica con [`instalar.sh`](../lab/fw01/instalar.sh), que antes de tocar nada hace un backup
 y valida la sintaxis con `nft -c`.
 
@@ -100,6 +116,7 @@ Pruebas hechas el 17/11/2026, después de reiniciar `FW01`:
 | Mac → `DC01:445` (SMB, por Tailscale) | Bloqueado: desde Tailscale solo SSH y RDP | ✅ |
 | `SRV01` → internet | Bloqueado: Servidores no tiene salida | ✅ |
 | SSH a `FW01` con contraseña | Rechazado, solo clave | ✅ |
+| `SRV01` → `1.1.1.1:53` (DNS externo directo) | Bloqueado y registrado como `LAB-DNS-BLOQ` | ✅ |
 
 **Pendiente de probar:** el tráfico que sale de Clientes, Seguridad y Aislada. Todavía no hay VMs
 encendidas en esos segmentos.

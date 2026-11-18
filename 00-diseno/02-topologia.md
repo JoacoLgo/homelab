@@ -17,6 +17,12 @@ una conexión permitida siempre vuelven: el firewall lleva el estado de cada con
 | **Seguridad** | PERMITIR | PERMITIR | PERMITIR | - | PERMITIR |
 | **Aislada** | DENEGAR | DENEGAR | DENEGAR | DENEGAR | - |
 
+**Excepción: el DNS tiene un solo camino.** `DC01` es el DNS del lab, y es el **único** equipo
+que puede consultar DNS de internet (puerto 53), siempre a través de `FW01`, que registra cada
+consulta. Ningún otro equipo puede usar un DNS externo, aunque su segmento tenga salida a internet:
+todos tienen que preguntarle a `DC01`. Así un equipo comprometido no puede usar su propio DNS para
+esconderse o sacar datos.
+
 ### 2. Detalle de Segmentos y VMs
 
 - **WAN / Internet** (`LAB-WAN` - Interno + NAT | `10.10.0.0/24`)
