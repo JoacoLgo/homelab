@@ -1,5 +1,8 @@
 # Qué pasa exactamente cuando escribo una URL
 
+> ⏳ **Pendiente: Paso 17.** Esta es la plantilla del entregable del bloque. Se completa con capturas
+> propias de Wireshark cuando termine los pasos 13 a 16.
+
 **Entregable del Bloque 1 · Paso 17** · Análisis con capturas propias de Wireshark
 
 > Es la pregunta de entrevista técnica más frecuente que existe. La diferencia entre recitarla y
