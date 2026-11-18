@@ -1,6 +1,6 @@
 # Arquitectura del laboratorio
 
-**Versión 3 — Hyper-V.** Vigente desde el 27/08/2026 · Datos verificados sobre la máquina el 31/08/2026.
+**Versión 3 — Hyper-V.** Vigente desde el 27/08/2026 · Actualizado el 17/11/2026.
 Reemplaza a la v1 (Proxmox sobre servidor propio) y a la v2 (nube), ambas descartadas. El porqué del
 descarte está al final: las decisiones revertidas también son parte del diseño.
 
@@ -56,28 +56,38 @@ por PowerShell. Proxmox queda disponible como VM anidada si en algún momento ha
 
 ---
 
-## 4. Estado verificado al 31/08/2026
+## 4. Estado al 17/11/2026
 
 ### Switches virtuales
 
-Salida de `Get-VMSwitch`:
-
 | Nombre | Tipo | Situación |
 |---|---|---|
-| `LAB-SERVIDORES` | Private | Isla: sin router, no habla con nadie |
-| `LAB-CLIENTES` | Private | Isla |
-| `LAB-SEGURIDAD` | Private | Isla |
-| `LAB-AISLADA` | Private | Isla — y va a seguir aislada a propósito |
-| `Default Switch` | Internal | NAT + DHCP administrados por Windows. Es la única salida a internet |
+| `LAB-WAN` | Internal + NAT del host | Red `10.10.0.0/24`. El host es el gateway (`10.10.0.1`) y hace NAT hacia internet. Es la WAN de `FW01` |
+| `LAB-SERVIDORES` | Private | Conectado a `FW01` |
+| `LAB-CLIENTES` | Private | Conectado a `FW01` |
+| `LAB-SEGURIDAD` | Private | Conectado a `FW01` |
+| `LAB-AISLADA` | Private | Conectado a `FW01`, sin ruta hacia los demás segmentos |
+| `Default Switch` | Internal | Lo crea Windows y no se puede borrar. El lab no lo usa |
 
-Un switch **privado** en Hyper-V conecta VMs entre sí y **nada más**: ni con el host ni con otras
-redes. Cuatro switches privados sin router son cuatro islas.
+Un switch **privado** conecta VMs entre sí y nada más. Por eso los cuatro segmentos necesitan a
+`FW01` en el medio: es la única máquina con una placa en cada uno.
+
+El lab usa `LAB-WAN` en lugar del `Default Switch`: el `Default Switch` puede cambiar de rango
+cuando se reinicia el host, y el firewall necesita una WAN con dirección fija.
 
 ### Máquinas virtuales del laboratorio
 
-**Ninguna todavía.** El host aloja una VM ajena a este proyecto, que se apaga durante las sesiones
-de laboratorio; la única consecuencia para el diseño es el presupuesto de memoria de la sección
-siguiente.
+| VM | Estado |
+|---|---|
+| `FW01` | ✅ Funcionando y probada. Detalle en la sección 5 |
+| `SRV01` | ✅ Funcionando y endurecida ([Paso 9](../02-linux/09-srv01.md), [Paso 23](../02-linux/23-hardening.md)) |
+| `DC01` | 🔨 Creada, con AD DS y DNS para `lab.interno` respondiendo |
+| `WS01` | 🔨 Creada en `LAB-CLIENTES` |
+
+Las cuatro tienen un checkpoint base del 10/11/2026.
+
+El host aloja además una VM ajena a este proyecto, que se apaga durante las sesiones de
+laboratorio. La única consecuencia para el diseño es el presupuesto de memoria.
 
 ### Presupuesto de memoria
 
@@ -87,49 +97,58 @@ siguiente.
 | Con la VM ajena apagada | ~10 GB — alcanza para el laboratorio planificado |
 
 El laboratorio completo con todo prendido a la vez suma ~11 GB (FW01 1 GB + DC01 4 GB + WS01 4 GB +
-SRV01 2 GB). Entra usando **memoria dinámica** en las VMs ociosas y sin encender todo
-simultáneamente. Ampliar a 32 GB deja de ser urgente y pasa a ser deseable.
+SRV01 2 GB). Entra usando memoria dinámica en las VMs Windows y sin prender todo a la vez.
+Ampliar a 32 GB deja de ser urgente y pasa a ser deseable.
 
 ---
 
-## 5. Decisión abierta: el router del laboratorio
+## 5. El router del laboratorio: `FW01`
 
-Es el próximo paso del diseño y la pieza que convierte cuatro islas en una red. Hace falta una VM
-con **una placa en cada switch**, que rutee, haga NAT hacia el `Default Switch` y filtre entre
-segmentos.
+Las dos opciones que evalué:
 
 | Opción | A favor | En contra |
 |---|---|---|
-| **Debian 12 + `nftables`** *(candidata)* | Las reglas se escriben a mano, que es exactamente la habilidad que este laboratorio existe para construir. Consume ~1 GB, un tercio de la alternativa. | Curva más empinada, sin interfaz gráfica. |
-| **pfSense / OPNsense** | Interfaz web, es lo que se ve en muchas empresas. | Obligatoriamente **Generación 1** (FreeBSD no arranca con el UEFI de Gen 2) y **sin memoria dinámica**. Más RAM, y clickear una GUI enseña menos. |
+| **Debian + `nftables`** *(elegida)* | Las reglas se escriben a mano, que es justo lo que quiero aprender. Consume ~1 GB, un tercio de la alternativa. | Curva más empinada, sin interfaz gráfica. |
+| **pfSense / OPNsense** | Interfaz web, es lo que se ve en muchas empresas. | Obligatoriamente Generación 1 (FreeBSD no arranca con el UEFI de Gen 2) y sin memoria dinámica. Más RAM, y clickear una GUI enseña menos. |
 
-**Sin decidir.** Se resuelve en el Paso 3 del plan y queda registrado acá con su justificación.
+Elegí **Debian 13** (la estable actual) en lugar de Debian 12, que era lo que tenía anotado al
+principio.
+
+| Propiedad | Valor | Por qué |
+|---|---|---|
+| Generación | 2 (UEFI) | Debian la soporta, y no se puede cambiar después de creada la VM |
+| Secure Boot | Plantilla **Microsoft UEFI Certificate Authority** | La plantilla por defecto (*Microsoft Windows*) solo confía en el cargador de Windows. Con esa plantilla, la ISO de Debian no arranca |
+| Placas de red | 5: `LAB-WAN` + los cuatro segmentos | Una por red que tiene que rutear |
+| Direcciones MAC | Fijadas a mano | Con MAC dinámica, Hyper-V puede cambiarla y Debian deja de saber qué placa es cuál. Fijándola, cada interfaz queda siempre atada a su switch |
+| WAN | `10.10.0.2/24`, gateway `10.10.0.1` | IP fija dentro de `LAB-WAN` |
+| Firewall | `nftables`, reglas aplicadas y probadas | Siguen la matriz de tráfico de [`02-topologia.md`](02-topologia.md). Archivos en [`lab/fw01/`](../lab/fw01/) |
+
+La construcción, los problemas que encontré y las pruebas están en
+[`03-router-firewall.md`](03-router-firewall.md).
 
 ---
 
-## 6. Plan de direccionamiento propuesto
+## 6. Plan de direccionamiento
 
-⚠️ **Propuesta, todavía sin implementar.** Se valida y se corrige en el Paso 2 (topología) y se
-recalcula en el Paso 12 (subnetting), cuando el subnetting esté hecho a mano y no copiado.
+Los rangos salen del Paso 2 ([`02-topologia.md`](02-topologia.md)) y se recalculan en el Paso 12
+(subnetting), cuando lo haga a mano.
 
-| Segmento | Switch | Rango | Para qué existe |
-|---|---|---|---|
-| WAN | `Default Switch` | DHCP de Windows | Salida a internet por el NAT del host |
-| Servidores | `LAB-SERVIDORES` | `10.10.10.0/24` | `DC01`, `SRV01` |
-| Clientes | `LAB-CLIENTES` | `10.10.20.0/24` | `WS01` y futuros clientes del dominio |
-| Seguridad | `LAB-SEGURIDAD` | `10.10.30.0/24` | Colector de logs y herramientas defensivas |
-| Aislada | `LAB-AISLADA` | `10.10.40.0/24` | Kali y muestras. **Sin ruta hacia los demás segmentos** |
+| Segmento | Switch | Rango | Gateway | Para qué existe |
+|---|---|---|---|---|
+| WAN | `LAB-WAN` | `10.10.0.0/24` | `10.10.0.1` (host) | Salida a internet por el NAT del host. `FW01` tiene la `.2` |
+| Servidores | `LAB-SERVIDORES` | `10.10.10.0/24` | `10.10.10.1` (`FW01`) | `DC01`, `SRV01` |
+| Clientes | `LAB-CLIENTES` | `10.10.20.0/24` | `10.10.20.1` (`FW01`) | `WS01` y futuros clientes del dominio |
+| Seguridad | `LAB-SEGURIDAD` | `10.10.30.0/24` | `10.10.30.1` (`FW01`) | Colector de logs y herramientas defensivas |
+| Aislada | `LAB-AISLADA` | `10.10.40.0/24` | — | Kali y muestras. **Sin ruta hacia los demás segmentos** |
 
-## 7. Inventario objetivo de VMs
+## 7. Inventario de VMs
 
-Ninguna existe todavía. Es el destino del Bloque 0 del plan.
-
-| VM | Rol | SO | Recursos previstos | Segmento | Paso |
-|---|---|---|---|---|---|
-| `FW01` | Router, firewall e inter-segmento | Debian 12 *(a confirmar)* | 1 GB · 1 vCPU · 5 placas | Todos | 3 |
-| `DC01` | AD DS, DNS, DHCP | Windows Server 2022 (evaluación 180 días) | 4 GB · 2 vCPU · 60 GB | Servidores | 4–6 |
-| `WS01` | Cliente unido al dominio | Windows 11 Pro | 4 GB dinámicos · 2 vCPU | Clientes | 7–8 |
-| `SRV01` | Servidor Linux, servicios y logs | Debian / Ubuntu Server | 2 GB dinámicos · 2 vCPU | Servidores | 9 |
+| VM | Rol | SO | Recursos | Segmento | Paso | Estado |
+|---|---|---|---|---|---|---|
+| `FW01` | Router, firewall e inter-segmento | Debian 13 | 1 GB estáticos · 5 placas | Todos | 3 | ✅ |
+| `DC01` | AD DS, DNS | Windows Server 2022 (evaluación 180 días) | 4 GB dinámicos | Servidores · `10.10.10.10` | 4–6 | 🔨 |
+| `WS01` | Cliente unido al dominio | Windows 11 Pro | 4 GB dinámicos | Clientes | 7–8 | 🔨 |
+| `SRV01` | Servidor Linux, servicios y logs | Ubuntu Server 26.04 LTS | 2 GB estáticos | Servidores · `10.10.10.20` | 9 | ✅ |
 
 ---
 
@@ -137,7 +156,9 @@ Ninguna existe todavía. Es el destino del Bloque 0 del plan.
 
 - **Generación 2 (UEFI)** para todo lo que la soporte. La elección es irreversible una vez creada
   la VM: no se puede convertir una Gen 1 en Gen 2.
-- **Memoria dinámica** en las VMs ociosas, **estática** donde el servicio la necesite reservada.
+- **Memoria estática en todas las VMs Linux.** Es la regla del lab: en Hyper-V, la memoria dinámica
+  en Linux depende del driver `hv_balloon` y no siempre se comporta bien, y en VMs de 1 o 2 GB el
+  ahorro es mínimo. La dinámica queda para las VMs Windows.
 - **Checkpoints con nombre** en los hitos (`01-SO-limpio`, `02-en-dominio`), y fusionados cuando
   dejan de hacer falta: un checkpoint vivo deja la VM corriendo sobre un disco diferencial.
 - **Rutas en el host:** `C:\Lab\{VMs,Discos,ISOs}`. Queda por definir si se mantiene la separación
@@ -164,9 +185,9 @@ Se documentan porque explican por qué el diseño es el que es.
 
 ## 10. Orden de construcción
 
-1. **Paso 1** — Conceptos de virtualización, escritos con palabras propias. *(En curso)*
-2. **Paso 2** — Topología en papel: segmentos, rangos, gateways y diagrama.
-3. **Paso 3** — `FW01`: la decisión de arriba, construida y con reglas versionadas en `lab/fw01/`.
-4. **Pasos 4–8** — `DC01`, dominio, usuarios por CSV, `WS01` unido al dominio y GPOs con auditoría.
-5. **Paso 9** — `SRV01` y acceso por clave SSH.
-6. **Paso 10** — Checkpoints, backup y guía de reproducción de todo el laboratorio.
+1. ✅ **Paso 1** — Conceptos de virtualización, escritos con palabras propias.
+2. ✅ **Paso 2** — Topología: segmentos, rangos, gateways, matriz de tráfico y diagrama.
+3. ✅ **Paso 3** — `FW01` con Debian 13 y `nftables`, reglas versionadas en `lab/fw01/`.
+4. 🔨 **Pasos 4–8** — `DC01` y el dominio `lab.interno` creados. Falta: usuarios por CSV, `WS01` unido al dominio y GPOs con auditoría.
+5. ✅ **Paso 9** — `SRV01` con acceso solo por clave SSH.
+6. 🔨 **Paso 10** — Checkpoint base de las cuatro VMs hecho. Falta la guía de reproducción.
