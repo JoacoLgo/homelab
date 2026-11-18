@@ -20,8 +20,8 @@ propios adentro). Si una captura ilustra algo y está revisada, se sube a mano c
 
 ## Índice
 
-- [ ] `11-modelo-osi.md` — tabla de capas: protocolo de ejemplo, unidad de datos y problema típico de cada una *(Paso 11)*
-- [ ] `12-subnetting.md` — 20 ejercicios resueltos y el procedimiento con palabras propias, más los segmentos del lab recalculados y justificados *(Paso 12)*
+- [x] [`11-modelo-osi.md`](11-modelo-osi.md) — tabla de capas: protocolo de ejemplo, unidad de datos y problema típico de cada una *(Paso 11)*
+- [ ] [`12-subnetting.md`](12-subnetting.md) — 20 ejercicios resueltos y el procedimiento con palabras propias, más los segmentos del lab recalculados y justificados *(Paso 12 · en curso)*
 - [ ] `13-vlans-stp.md` + topología en `packet-tracer/` — 3 VLANs con routing entre ellas (router-on-a-stick) *(Paso 13)*
 - [ ] `14-routing.md` — el recorrido completo de un paquete desde `WS01` hasta internet, salto por salto, con la tabla de routing de cada equipo *(Paso 14)*
 - [ ] `15-servicios.md` — capturas propias de una consulta DNS, un DORA de DHCP y un handshake TLS, explicadas campo por campo *(Paso 15)*

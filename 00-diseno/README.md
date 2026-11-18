@@ -17,9 +17,9 @@ La construcción propiamente dicha se documenta en [`03-windows-ad/`](../03-wind
 ## Índice
 
 - [x] [`arquitectura.md`](arquitectura.md) — el diseño completo: host, switches, presupuesto de RAM, inventario objetivo de VMs, convenciones y decisiones descartadas
-- [ ] [`01-conceptos-virtualizacion.md`](01-conceptos-virtualizacion.md) — los seis conceptos de virtualización explicados con palabras propias *(Paso 1 · en curso)*
-- [ ] `02-topologia.md` + `diagrama-lab.png` — segmento, switch, rango IP, gateway, qué VMs viven ahí y para qué existe cada uno *(Paso 2)*
-- [ ] `03-router-firewall.md` — la decisión entre Debian + `nftables` y pfSense, con su justificación y el resultado de la prueba de aislamiento *(Paso 3)*
+- [x] [`01-conceptos-virtualizacion.md`](01-conceptos-virtualizacion.md) — los seis conceptos de virtualización explicados con palabras propias *(Paso 1)*
+- [x] [`02-topologia.md`](02-topologia.md) + [`switch.drawio.png`](switch.drawio.png) — matriz de tráfico entre segmentos, y qué VMs viven en cada uno y para qué *(Paso 2)*
+- [x] [`03-router-firewall.md`](03-router-firewall.md) — `FW01`: la decisión, la construcción, lo que estaba mal y las pruebas de la matriz *(Paso 3)*
 - [ ] `10-guia-de-reproduccion.md` — cómo levantar este laboratorio de cero desde este repositorio, más la estrategia de checkpoints y backup *(Paso 10)*
 
 > **Criterio del Paso 1:** el documento de conceptos está hecho cuando se puede escribir **sin

@@ -1,0 +1,7 @@
+# FW01 · /etc/systemd/network/13-seg.link
+# Placa conectada a LAB-SEGURIDAD. La MAC está fijada a mano en Hyper-V.
+[Match]
+MACAddress=00:15:5d:09:0c:08
+
+[Link]
+Name=seg

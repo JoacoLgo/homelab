@@ -1,0 +1,7 @@
+# FW01 · /etc/systemd/network/11-srv.link
+# Placa conectada a LAB-SERVIDORES. La MAC está fijada a mano en Hyper-V.
+[Match]
+MACAddress=00:15:5d:09:0c:06
+
+[Link]
+Name=srv
