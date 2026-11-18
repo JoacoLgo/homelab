@@ -40,8 +40,8 @@ Actualizado el **17/11/2026**.
 | `FW01` — router/firewall en Debian 13 con `nftables`, cinco placas, matriz de tráfico probada | ✅ Hecho |
 | `SRV01` — Ubuntu Server 26.04, SSH solo con clave, UFW con denegación por defecto, Lynis de 56 a 65 | ✅ Hecho |
 | Checkpoint base de las cuatro VMs | ✅ Hecho |
-| `DC01` — Windows Server 2022 con AD DS y DNS (`lab.interno`) | 🔨 En curso |
-| `WS01` — cliente Windows 11 en `LAB-CLIENTES`, unión al dominio y GPOs | 🔨 En curso |
+| `DC01` — Windows Server 2025, dominio `lab.interno`, DNS del lab, 20 usuarios en 6 áreas, GPOs revisadas y corregidas | ✅ Hecho |
+| `WS01` — cliente Windows 11 unido al dominio | 🔨 Falta verificar GPOs con `gpresult` |
 | Repositorio y documentación | 🔨 En curso |
 | Sysmon en los endpoints | ⏳ Pendiente |
 | Telemetría hacia Microsoft Sentinel + consultas KQL | ⏳ Pendiente |
@@ -115,7 +115,7 @@ archivo y del archivo al plan sin buscar.
 |---|---|---|
 | Virtualización | Hyper-V (Windows 11 Pro) | En uso |
 | Router / firewall | Debian 13 + `nftables` | En uso |
-| Directorio | Windows Server 2022 — AD DS, DNS, GPO | En curso |
+| Directorio | Windows Server 2025 — AD DS, DNS, GPO | En uso |
 | Cliente | Windows 11 Pro unido al dominio | En curso |
 | Servidor Linux | Ubuntu Server 26.04 LTS · UFW · Lynis | En uso |
 | Telemetría de endpoint | Sysmon | Pendiente |
@@ -136,6 +136,7 @@ bien a la primera no enseñó nada.
 Si venís de una búsqueda laboral y tenés cinco minutos:
 
 1. [`00-diseno/03-router-firewall.md`](00-diseno/03-router-firewall.md) — el firewall del lab: un problema real, el diagnóstico y las pruebas.
-2. [`02-linux/23-hardening.md`](02-linux/23-hardening.md) — hardening de un servidor Linux, medido con Lynis antes y después.
-3. [`00-diseno/arquitectura.md`](00-diseno/arquitectura.md) — el diseño completo y las decisiones, con su justificación.
-4. [`casos-reales/`](casos-reales/) — problemas resueltos en mi trabajo de infraestructura.
+2. [`03-windows-ad/08-gpos.md`](03-windows-ad/08-gpos.md) — tres GPOs que no se aplicaban: cómo lo detecté y cómo lo corregí.
+3. [`02-linux/23-hardening.md`](02-linux/23-hardening.md) — hardening de un servidor Linux, medido con Lynis antes y después.
+4. [`00-diseno/arquitectura.md`](00-diseno/arquitectura.md) — el diseño completo y las decisiones, con su justificación.
+5. [`casos-reales/`](casos-reales/) — problemas resueltos en mi trabajo de infraestructura.

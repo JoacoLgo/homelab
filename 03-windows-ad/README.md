@@ -17,11 +17,11 @@ usuarios**, en [`lab/`](../lab/).
 
 ### Construcción del dominio (Bloque 0)
 
-- [ ] `04-dc01.md` — la VM del controlador de dominio: Windows Server 2022 de evaluación, Generación 2, IP fija. Creada a mano y después reproducida con PowerShell para entender qué hace cada clic *(Paso 4)*
-- [ ] `05-dominio.md` — promoción a controlador de dominio, `dcdiag` sin errores críticos y resolución DNS funcionando *(Paso 5)*
-- [ ] `06-usuarios-ous.md` — OUs, grupos y usuarios importados por CSV *(Paso 6 · script y CSV en `04-scripting/powershell/` y `lab/data/`)*
-- [ ] `07-ws01.md` — el cliente Windows 11 unido al dominio, con el evento 4624 visible en el DC *(Paso 7)*
-- [ ] `08-gpos.md` — 5 GPOs verificadas desde el cliente con `gpresult`, cada una con qué hace y por qué *(Paso 8)*
+- [x] [`04-dc01.md`](04-dc01.md) — la VM del controlador de dominio: Windows Server 2025, Generación 2, IP fija y SSH solo con clave *(Paso 4)*
+- [x] [`05-dominio.md`](05-dominio.md) — el dominio `lab.interno`, el DNS que no resolvía internet y `dcdiag` *(Paso 5)*
+- [ ] [`06-usuarios-ous.md`](06-usuarios-ous.md) — OUs, grupos y 20 usuarios en 6 áreas *(Paso 6 · falta subir el script del CSV)*
+- [ ] [`07-ws01.md`](07-ws01.md) — el cliente Windows 11 unido al dominio *(Paso 7 · falta el evento 4624)*
+- [ ] [`08-gpos.md`](08-gpos.md) — las GPOs, tres que no se aplicaban y cómo las corregí *(Paso 8 · falta `gpresult` desde `WS01`)*
 
 ### Seguridad de la identidad (Bloque 3)
 

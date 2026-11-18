@@ -81,8 +81,8 @@ cuando se reinicia el host, y el firewall necesita una WAN con dirección fija.
 |---|---|
 | `FW01` | ✅ Funcionando y probada. Detalle en la sección 5 |
 | `SRV01` | ✅ Funcionando y endurecida ([Paso 9](../02-linux/09-srv01.md), [Paso 23](../02-linux/23-hardening.md)) |
-| `DC01` | 🔨 Creada, con AD DS y DNS para `lab.interno` respondiendo |
-| `WS01` | 🔨 Creada en `LAB-CLIENTES` |
+| `DC01` | ✅ Dominio `lab.interno` y DNS del lab ([Pasos 4 a 8](../03-windows-ad/)) |
+| `WS01` | 🔨 Unida al dominio. Falta verificar las GPOs desde el cliente |
 
 Las cuatro tienen un checkpoint base del 10/11/2026.
 
@@ -146,7 +146,7 @@ Los rangos salen del Paso 2 ([`02-topologia.md`](02-topologia.md)) y se recalcul
 | VM | Rol | SO | Recursos | Segmento | Paso | Estado |
 |---|---|---|---|---|---|---|
 | `FW01` | Router, firewall e inter-segmento | Debian 13 | 1 GB estáticos · 5 placas | Todos | 3 | ✅ |
-| `DC01` | AD DS, DNS | Windows Server 2022 (evaluación 180 días) | 4 GB dinámicos | Servidores · `10.10.10.10` | 4–6 | 🔨 |
+| `DC01` | AD DS, DNS | Windows Server 2025 (evaluación 180 días) | 4 GB dinámicos | Servidores · `10.10.10.10` | 4–6 | ✅ |
 | `WS01` | Cliente unido al dominio | Windows 11 Pro | 4 GB dinámicos | Clientes | 7–8 | 🔨 |
 | `SRV01` | Servidor Linux, servicios y logs | Ubuntu Server 26.04 LTS | 2 GB estáticos | Servidores · `10.10.10.20` | 9 | ✅ |
 
@@ -188,6 +188,6 @@ Se documentan porque explican por qué el diseño es el que es.
 1. ✅ **Paso 1** — Conceptos de virtualización, escritos con palabras propias.
 2. ✅ **Paso 2** — Topología: segmentos, rangos, gateways, matriz de tráfico y diagrama.
 3. ✅ **Paso 3** — `FW01` con Debian 13 y `nftables`, reglas versionadas en `lab/fw01/`.
-4. 🔨 **Pasos 4–8** — `DC01` y el dominio `lab.interno` creados. Falta: usuarios por CSV, `WS01` unido al dominio y GPOs con auditoría.
+4. 🔨 **Pasos 4–8** — `DC01`, dominio `lab.interno`, 20 usuarios en 6 áreas, `WS01` unida y GPOs corregidas. Falta: subir el script del CSV y verificar las GPOs desde `WS01`.
 5. ✅ **Paso 9** — `SRV01` con acceso solo por clave SSH.
 6. 🔨 **Paso 10** — Checkpoint base de las cuatro VMs hecho. Falta la guía de reproducción.
