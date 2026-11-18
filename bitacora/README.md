@@ -24,4 +24,5 @@ Hay una [`plantilla-entrada.md`](plantilla-entrada.md) para copiar y pegar.
 
 ## Índice
 
+- [2026-11-17](2026-11-17-fw01-y-srv01.md) — FW01 no ruteaba ni filtraba, y hardening de SRV01
 - [2026-09-01](2026-09-01-setup-git.md) — Git y SSH en la Mac, y reordenamiento del repositorio
