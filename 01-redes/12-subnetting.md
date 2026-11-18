@@ -90,8 +90,8 @@ reglas de firewall quedan más claras. Si fuera una red con direcciones escasas,
 
 ## Cómo lo verifiqué
 
-Los resultados de la tabla están comprobados con `ipcalc` y con el módulo `ipaddress` de Python.
-Practico en `subnettingpractice.com` sin calculadora.
+Los resultados de la tabla están comprobados con el módulo `ipaddress` de Python. Para ganar
+velocidad practico en `subnettingpractice.com`, sin calculadora.
 
 ## Qué aprendí
 
