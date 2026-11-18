@@ -1,0 +1,36 @@
+# FW01 · /etc/network/interfaces
+# Los nombres (wan, srv, cli, seg, ais) los pone systemd según la MAC de cada placa.
+# Ver los archivos .link en /etc/systemd/network/.
+
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+
+# LAB-WAN · salida a internet por el NAT del host
+auto wan
+iface wan inet static
+	address 10.10.0.2/24
+	gateway 10.10.0.1
+	dns-nameservers 1.1.1.1
+
+# LAB-SERVIDORES · DC01, SRV01
+auto srv
+iface srv inet static
+	address 10.10.10.1/24
+
+# LAB-CLIENTES · WS01
+auto cli
+iface cli inet static
+	address 10.10.20.1/24
+
+# LAB-SEGURIDAD · colector de logs
+auto seg
+iface seg inet static
+	address 10.10.30.1/24
+
+# LAB-AISLADA · la placa queda levantada pero sin IP.
+# Sin dirección, nada de esa red puede usar a FW01 como gateway.
+auto ais
+iface ais inet manual
+	up ip link set ais up

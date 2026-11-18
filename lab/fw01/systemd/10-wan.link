@@ -1,0 +1,7 @@
+# FW01 · /etc/systemd/network/10-wan.link
+# Placa conectada a LAB-WAN. La MAC está fijada a mano en Hyper-V.
+[Match]
+MACAddress=00:15:5d:09:0c:05
+
+[Link]
+Name=wan

@@ -1,0 +1,7 @@
+# FW01 · /etc/systemd/network/12-cli.link
+# Placa conectada a LAB-CLIENTES. La MAC está fijada a mano en Hyper-V.
+[Match]
+MACAddress=00:15:5d:09:0c:07
+
+[Link]
+Name=cli
